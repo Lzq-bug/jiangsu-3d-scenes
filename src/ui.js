@@ -1,13 +1,11 @@
-import { DEFAULTS } from './data.js';
-
 const $ = (id) => document.getElementById(id);
 const pctFill = (el) => {
   const p = (el.value - el.min) / (el.max - el.min);
   el.style.setProperty('--fill', `${(p * 100).toFixed(1)}%`);
 };
 
-export function createUI({ stations, onChange, onSelect, onMode, onTour, onShot, onReset, onStep }) {
-  const params = { ...DEFAULTS };
+export function createUI({ stations, defaults, onChange, onSelect, onMode, onTour, onShot, onReset, onStep }) {
+  const params = { ...defaults };
   const rail = $('stations');
   const info = $('info');
   const help = $('help');
@@ -79,7 +77,7 @@ export function createUI({ stations, onChange, onSelect, onMode, onTour, onShot,
   });
   $('info-close').addEventListener('click', () => { info.hidden = true; });
   $('btn-defaults').addEventListener('click', () => {
-    Object.assign(params, DEFAULTS);
+    Object.assign(params, defaults);
     sliders.forEach(([key, sid, vid, fmt, scale]) => {
       const el = $(sid);
       el.value = params[key];

@@ -85,7 +85,7 @@ html, body {
   border: 1px solid rgba(255, 255, 255, 0.09); backdrop-filter: blur(9px);
   font-variant-numeric: tabular-nums;
 }
-.chip.btn { cursor: pointer; }
+.chip.btn { cursor: pointer; text-decoration: none; display: inline-block; }
 .chip.btn:hover { color: #fff; border-color: var(--gold-dim); }
 #fps.warn { color: #ffb4a1; }
 
@@ -262,6 +262,49 @@ input[type=range]::-moz-range-thumb {
 }
 .help-note { margin: 16px 0 0; font-size: 11px; line-height: 1.8; color: rgba(238, 242, 255, 0.4); }
 
+/* ---------- 平江路：把金粉换成水墨与竹青，灯火仍是暖的 ---------- */
+body.pj {
+  --ink: #050810;
+  --ink-2: #0a0f1c;
+  --glass: rgba(8, 12, 22, 0.68);
+  --glass-2: rgba(13, 19, 32, 0.52);
+  --gold: #cfdcc9;
+  --gold-dim: rgba(190, 208, 190, 0.32);
+  --red: #b8564c;
+  --jade: #86c8ae;
+}
+body.pj .seal {
+  color: #eef3e6;
+  background: linear-gradient(160deg, #33454a, #1c2830);
+  box-shadow: 0 0 0 1px rgba(196, 214, 196, 0.42), 0 8px 26px rgba(28, 40, 48, 0.45);
+}
+body.pj .brand-text h1 { color: #eef1e6; }
+body.pj .mode.active {
+  color: #121a14;
+  background: linear-gradient(180deg, #dfe8d6, #b7c8b0);
+  box-shadow: 0 0 18px rgba(210, 226, 200, 0.22);
+}
+body.pj .st.active {
+  color: #f2f6ea;
+  background: linear-gradient(180deg, rgba(86, 112, 106, 0.5), rgba(34, 48, 54, 0.5));
+  box-shadow: 0 0 22px rgba(150, 190, 160, 0.16);
+}
+body.pj .info {
+  background: linear-gradient(180deg, rgba(13, 20, 28, 0.86), rgba(7, 10, 18, 0.82));
+}
+body.pj input[type=range]::-webkit-slider-thumb { border-color: #8fa58c; background: #f3f7ea; box-shadow: 0 0 10px rgba(200, 224, 190, 0.6); }
+body.pj .compass .needle { fill: #7fb49a; stroke: #dfe8d6; }
+body.pj .loader { background: radial-gradient(120% 100% at 50% 42%, #0d1626 0%, #04070e 70%); }
+body.pj .loader-inner h2 { color: #e9f0e2; }
+body.pj .loader-lamp {
+  border-radius: 50% 50% 48% 48%;
+  background: radial-gradient(circle at 50% 40%, #ffe9c0, #e08a4c 70%, #a8542c);
+  box-shadow: 0 0 42px rgba(240, 160, 90, 0.5), inset 0 0 16px rgba(255, 244, 214, 0.55);
+}
+
+/* 截图模式：#bare 时只留画面 */
+body.bare .hud, body.bare .panel, body.bare .stations, body.bare .compass, body.bare .info, body.bare #label-layer { display: none !important; }
+
 @media (max-width: 900px) {
   .brand-text h1 { font-size: 18px; letter-spacing: 2px; }
   .brand-text p { display: none; }
@@ -271,4 +314,44 @@ input[type=range]::-moz-range-thumb {
   .compass { width: 62px; height: 62px; right: 14px; bottom: 22px; }
   .stations { bottom: 12px; }
   .hud-top { padding: 12px; }
+}
+
+/* ---------- 台城：青砖、湖青与一线暖灯 ---------- */
+body.tc {
+  --ink: #04070f;
+  --ink-2: #0a1120;
+  --glass: rgba(9, 14, 26, 0.68);
+  --glass-2: rgba(14, 20, 34, 0.52);
+  --gold: #cdd9e6;
+  --gold-dim: rgba(176, 198, 218, 0.32);
+  --red: #c0563f;
+  --jade: #7fb6d8;
+}
+body.tc .seal {
+  color: #eef3f9;
+  background: linear-gradient(160deg, #33455a, #18222f);
+  box-shadow: 0 0 0 1px rgba(196, 214, 230, 0.42), 0 8px 26px rgba(22, 34, 48, 0.5);
+}
+body.tc .brand-text h1 { color: #eef2f8; }
+body.tc .mode.active {
+  color: #121a24;
+  background: linear-gradient(180deg, #dde8f2, #adc0d2);
+  box-shadow: 0 0 18px rgba(190, 216, 238, 0.22);
+}
+body.tc .st.active {
+  color: #f0f5fa;
+  background: linear-gradient(180deg, rgba(74, 104, 132, 0.52), rgba(26, 38, 52, 0.52));
+  box-shadow: 0 0 22px rgba(140, 186, 216, 0.16);
+}
+body.tc .info {
+  background: linear-gradient(180deg, rgba(12, 20, 32, 0.86), rgba(6, 10, 18, 0.84));
+}
+body.tc input[type=range]::-webkit-slider-thumb { border-color: #8aa4be; background: #eef4fa; box-shadow: 0 0 10px rgba(190, 218, 240, 0.6); }
+body.tc .compass .needle { fill: #6f9ec6; stroke: #dae6f2; }
+body.tc .loader { background: radial-gradient(120% 100% at 50% 42%, #0d1728 0%, #03060d 72%); }
+body.tc .loader-inner h2 { color: #e9eff7; }
+body.tc .loader-lamp {
+  border-radius: 14%;
+  background: linear-gradient(160deg, #ffdda8, #d9834c 62%, #8f4a2c);
+  box-shadow: 0 0 42px rgba(240, 170, 100, 0.45), inset 0 0 14px rgba(255, 244, 214, 0.5);
 }

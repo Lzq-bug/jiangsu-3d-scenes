@@ -76,7 +76,7 @@ export function initMaterials() {
   M.dark = lit('#141824', { rough: 0.9 });
   M.silk = lit('#d4705a', { rough: 0.6, side: THREE.DoubleSide });
   M.leaf = lit('#2b4d3a', { rough: 0.95, side: THREE.DoubleSide });
-  M.lattice = new THREE.MeshBasicMaterial({ map: T.lattice(), color: 0x9c7c54 });
+  M.lattice = new THREE.MeshBasicMaterial({ map: T.lattice(), color: 0x9c7c54, side: THREE.DoubleSide });
   M.lattice.toneMapped = false;
   return M;
 }
@@ -287,6 +287,22 @@ export function box(w, h, d, x = 0, y = 0, z = 0) {
   const g = new THREE.BoxGeometry(w, h, d);
   g.translate(x, y, z);
   return g;
+}
+
+/* --------------------------------------------------- near-camera occluders */
+const occluders = [];
+/**
+ * Objects that must never fill the frame when the viewer walks up to them.
+ * `center` is needed for meshes whose geometry was baked at the site (position
+ * stays at the origin), otherwise the object's own position is used.
+ */
+export function registerOccluder(obj, radius = 3.2, center = null) {
+  const at = center || obj.position.clone();
+  occluders.push({ obj, radius, at });
+  return obj;
+}
+export function declutter(cameraPos) {
+  for (const o of occluders) o.obj.visible = o.at.distanceTo(cameraPos) > o.radius;
 }
 
 /** merge a list of [geometry, material] pairs into a single-mesh group-friendly form */

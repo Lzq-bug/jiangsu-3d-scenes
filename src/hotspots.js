@@ -76,6 +76,11 @@ export class Hotspots {
     this.labelsOn = v;
     this.layer.style.display = v ? '' : 'none';
   }
+  /** landmark rings and captions are meaningless once you are indoors */
+  set exteriorShown(v) {
+    this.grp.visible = v;
+    for (const h of this.map.values()) h.label.style.visibility = v ? '' : 'hidden';
+  }
   setCurrent(id) {
     this.current = id;
     for (const [k, h] of this.map) {

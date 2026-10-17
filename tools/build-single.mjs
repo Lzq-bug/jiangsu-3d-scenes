@@ -1,7 +1,7 @@
 /**
  * Bundles the whole scene into one self-contained HTML file that opens with a
  * double-click — no server, no modules, no network.
- *   node tools/build-single.mjs [outfile]
+ *   node tools/build-single.mjs [page.html] [entry.js] [outfile]
  *
  * Each ES module becomes a factory in a tiny registry, so the top-level names of
  * three.js, its addons and our own sources keep their own scopes instead of
@@ -12,7 +12,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
-const ENTRY = 'src/main.js';
+const [PAGE = 'index.html', ENTRY = 'src/main.js', OUT = 'dist/夫子庙秦淮画廊-3D全景.html'] = process.argv.slice(2);
 
 const ALIAS = {
   three: 'vendor/three.module.js',
@@ -122,10 +122,12 @@ async function collect(entry) {
   return order.map((id) => transform(id, seen.get(id))).join('\n');
 }
 
-const out = process.argv[2] || 'dist/夫子庙秦淮画廊-3D全景.html';
-const [html, css, bundle] = await Promise.all([
-  readFile(join(ROOT, 'index.html'), 'utf8'),
-  readFile(join(ROOT, 'styles.css'), 'utf8'),
+const out = OUT;
+const html = await readFile(join(ROOT, PAGE), 'utf8');
+// the stylesheet is whatever the page itself links, so any app folder works
+const cssHref = (html.match(/<link rel="stylesheet" href="([^"]+)">/) || [])[1] || 'styles.css';
+const [css, bundle] = await Promise.all([
+  readFile(join(ROOT, join(dirname(PAGE), cssHref)), 'utf8'),
   collect(ENTRY),
 ]);
 

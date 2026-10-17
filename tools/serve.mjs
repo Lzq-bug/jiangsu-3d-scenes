@@ -57,5 +57,7 @@ const server = createServer(async (req, res) => {
 
 server.listen(PORT, '127.0.0.1', () => {
   console.log(`夫子庙 · 秦淮画廊 3D 全景 → http://127.0.0.1:${PORT}/index.html`);
+  console.log(`平江路 · 灯河夜巷 3D 全景 → http://127.0.0.1:${PORT}/pingjiang.html`);
+  console.log(`沧浪亭 · 清风明月 3D 夜景 → http://127.0.0.1:${PORT}/canglang/index.html`);
   console.log('Ctrl+C 退出');
 });

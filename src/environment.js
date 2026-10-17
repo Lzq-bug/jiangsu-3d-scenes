@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { M, glow, rand, rr } from './kit.js';
+import { M, glow, rand, rr, registerOccluder } from './kit.js';
 import { STATIONS } from './data.js';
 import * as T from './textures.js';
 
@@ -46,7 +46,7 @@ function skyDome() {
   return { mesh: g, uni };
 }
 
-function stars() {
+export function stars() {
   const N = 1400, pos = new Float32Array(N * 3), size = new Float32Array(N), phase = new Float32Array(N);
   for (let i = 0; i < N; i++) {
     const a = rand() * Math.PI * 2;
@@ -158,7 +158,7 @@ function ridges() {
 }
 
 /** weeping willow: bent trunk + drooping tube strands (one merged geo, reused) */
-function willowGeo() {
+export function willowGeo() {
   const parts = [];
   const trunk = new THREE.CylinderGeometry(0.22, 0.5, 4.6, 7);
   trunk.translate(0, 2.3, 0);
@@ -199,7 +199,7 @@ function willows() {
     t.position.set(x, 2.4, z);
     t.rotation.y = rand() * 6.28;
     t.castShadow = true;
-    grp.add(t);
+    grp.add(registerOccluder(t, 4.2));
   }
   return grp;
 }
@@ -228,7 +228,7 @@ export function buildEnvironment(scene) {
     [[30, 8, 2], 0xffc07a, 120, 88],
     [[52, 10, 0], 0xffb066, 130, 96],
     [[-18, 6, -78], 0xffbb77, 180, 78],
-    [[-42, 9.0, 46], 0xffc98a, 90, 80],
+    [[-45, 9.5, 46], 0xffc98a, 120, 110],
   ];
   const fills = fillSpots.map(([p, color, i, dist]) => {
     const l = new THREE.PointLight(color, i, dist, 2);

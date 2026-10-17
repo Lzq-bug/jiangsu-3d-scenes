@@ -3,18 +3,26 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { initMaterials } from './kit.js';
+import { initMaterials, declutter } from './kit.js';
 import { buildEnvironment } from './environment.js';
 import { buildQuarter } from './architecture.js';
 import { buildProps } from './props.js';
+import { buildInteriors } from './interiors.js';
+import { buildPortals } from './portals.js';
 import { buildWater, LightColumns, Reflections } from './water.js';
 import { Hotspots } from './hotspots.js';
 import { CameraRig } from './controls.js';
 import { createUI } from './ui.js';
-import { STATIONS } from './data.js';
+import { STATIONS, DEFAULTS } from './data.js';
 
 const canvas = document.getElementById('stage');
-const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
+// rAF is frozen in a background tab, so each build step also has a timer fallback
+const nextFrame = () => new Promise((r) => {
+  let done = false;
+  const go = () => { if (!done) { done = true; r(); } };
+  requestAnimationFrame(go);
+  setTimeout(go, 60);
+});
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -33,7 +41,7 @@ composer.addPass(bloom);
 composer.addPass(new OutputPass());
 
 const rig = new CameraRig(camera, canvas);
-let ui, env, props, water, columns, reflections, hotspots, quarter;
+let ui, env, props, water, columns, reflections, hotspots, quarter, portals;
 let stationIndex = 0;
 let wantShot = false;
 let qualityLevel = 0;
@@ -124,6 +132,8 @@ function frame() {
   columns.update(t, state.ripple, 0.75 + 0.45 * Math.min(1, state.lantern));
   if (reflections.enabled) reflections.update(t, state.ripple);
   hotspots.update(camera, t, { width: window.innerWidth, height: window.innerHeight });
+  declutter(camera.position);
+  portals.update(t, camera.position);
 
   if (state.tour) {
     tourClock += dt;
@@ -164,6 +174,7 @@ function capture() {
 async function boot() {
   ui = createUI({
     stations: STATIONS,
+    defaults: DEFAULTS,
     onChange: onParam,
     onSelect: (s) => goToStation(STATIONS.indexOf(s)),
     onMode: setMode,
@@ -192,13 +203,19 @@ async function boot() {
   props = buildProps(scene, columns, quarter.anchors);
   await nextFrame();
 
-  ui.loading(0.72, '放下秦淮水面…');
+  ui.loading(0.68, '撑起殿宇廊舍的内景…');
+  buildInteriors(scene);
+  await nextFrame();
+
+  ui.loading(0.74, '放下秦淮水面…');
   water = buildWater(scene, columns);
   reflections = new Reflections(scene);
   reflections.add(quarter.group);
   await nextFrame();
 
-  ui.loading(0.86, '安顿灯影与游人身影…');
+  ui.loading(0.88, '安顿灯影与游人身影…');
+  portals = buildPortals(scene, rig, props.fleet.moored(0));
+  portals.onSpace = (space) => { hotspots.exteriorShown = space === 'exterior'; };
   hotspots = new Hotspots(scene, STATIONS, {
     onPick: (s) => goToStation(STATIONS.indexOf(s)),
   });
@@ -224,7 +241,7 @@ async function boot() {
   await new Promise((r) => setTimeout(r, 260));
   ui.loaded();
   // handle for scripting the camera from the console
-  window.qinhuai = { scene, camera, renderer, rig, bloom, STATIONS, goToStation, setMode };
+  window.qinhuai = { scene, camera, renderer, composer, rig, bloom, STATIONS, goToStation, setMode, portals };
   requestAnimationFrame(frame);
 }
 
@@ -232,9 +249,16 @@ async function boot() {
 function bindTap() {
   rig.onTap = ({ x, y }) => {
     const ndc = new THREE.Vector2((x / window.innerWidth) * 2 - 1, -(y / window.innerHeight) * 2 + 1);
+    const door = portals.pick(ndc, camera);
+    if (door) { portals.use(door); return; }
     const hit = hotspots.pick(ndc, camera);
     if (hit) goToStation(STATIONS.indexOf(hit));
   };
+  // E walks through whatever doorway you are standing in front of
+  window.addEventListener('keydown', (e) => {
+    if (e.key.toLowerCase() !== 'e' || (e.target && /INPUT|TEXTAREA/.test(e.target.tagName))) return;
+    portals.use(portals.nearest(camera.position));
+  });
 }
 
 boot().then(bindTap).catch((err) => {

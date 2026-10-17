@@ -32,7 +32,7 @@ class InstancedGlow extends THREE.InstancedMesh {
 }
 
 /** every fixed lamp in the scene, sorted so the density slider just darkens the tail */
-class LanternField {
+export class LanternField {
   constructor(scene, columns) {
     this.entries = [];
     this.columns = columns;
@@ -300,6 +300,11 @@ class Fleet {
     b.colRef = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
     return b;
   }
+  /** the first moored boat, whose cabin you can step into */
+  moored(i = 0) {
+    const b = this.boats.filter((x) => x.moored)[i];
+    return b ? b.grp : null;
+  }
   update(t, dt, speedScale) {
     const half = RIVER.length / 2 - 6;
     for (const b of this.boats) {
@@ -334,8 +339,30 @@ class Fleet {
 }
 
 /* ------------------------------------------------------------------ 人流 */
-class Crowd {
-  constructor(scene) {
+/** 秦淮两岸的行走路径；桥上的走法由 bridgeAt(u, off) 给出一段弧线 */
+const QUAY_PATHS = [
+  { a: [-25.6, Q + 0.5, -70], b: [-25.6, Q + 0.5, 70] },
+  { a: [-24.2, Q + 0.5, 68], b: [-26.8, Q + 0.5, -68] },
+  { a: [-20.8, Q + 0.6, -86], b: [-20.8, Q + 0.6, 86] },
+  { a: [20.8, Q + 0.6, 86], b: [20.8, Q + 0.6, -86] },
+  { a: [26.0, Q + 0.6, -26], b: [26.0, Q + 0.6, 26] },
+  { a: [34.5, Q + 0.6, 12], b: [34.5, Q + 0.6, -12] },
+  { a: [45.0, Q + 3.2, -8], b: [45.0, Q + 3.2, 8] },
+  { a: [-19.6, Q + 0.6, -46], b: [-19.6, Q + 0.6, -90] },
+];
+/** 文德桥：桥面在 z=0 横跨河道，中线最高 */
+function quayBridgeAt(u, off) {
+  const x = Math.sign(u - 0.5 || 1) * (6 + Math.abs(u - 0.5) * 26);
+  const s = 19;
+  return { x, y: Q + 0.6 + 5.3 * Math.max(0, 1 - (x / s) ** 2) ** 0.86 - 0.5, z: off * 1.4, heading: x > 0 ? Math.PI : 0 };
+}
+
+export class Crowd {
+  constructor(scene, { paths = QUAY_PATHS, bridgeAt = quayBridgeAt, bridgeEvery = 24, lanternRate = 0.4 } = {}) {
+    this.paths = paths;
+    this.bridgeAt = bridgeAt;
+    this.bridgeEvery = bridgeEvery;
+    this.lanternRate = lanternRate;
     this.max = 320;
     this.agents = [];
     this.mesh = new THREE.InstancedMesh(
@@ -368,16 +395,7 @@ class Crowd {
     this.build();
   }
   build() {
-    const paths = [
-      { a: [-25.6, Q + 0.5, -70], b: [-25.6, Q + 0.5, 70] },
-      { a: [-24.2, Q + 0.5, 68], b: [-26.8, Q + 0.5, -68] },
-      { a: [-20.8, Q + 0.6, -86], b: [-20.8, Q + 0.6, 86] },
-      { a: [20.8, Q + 0.6, 86], b: [20.8, Q + 0.6, -86] },
-      { a: [26.0, Q + 0.6, -26], b: [26.0, Q + 0.6, 26] },
-      { a: [34.5, Q + 0.6, 12], b: [34.5, Q + 0.6, -12] },
-      { a: [45.0, Q + 3.2, -8], b: [45.0, Q + 3.2, 8] },
-      { a: [-19.6, Q + 0.6, -46], b: [-19.6, Q + 0.6, -90] },
-    ];
+    const paths = this.paths;
     const lens = paths.map((p) => Math.hypot(p.b[0] - p.a[0], p.b[2] - p.a[2]));
     const total = lens.reduce((a, b) => a + b, 0);
     const cum = [];
@@ -392,15 +410,11 @@ class Crowd {
         off: rr(-1.4, 1.4),
         phase: rand() * 6.28,
         scale: rr(0.88, 1.1),
-        onBridge: i % 24 === 0,
-        lamp: rand() > 0.6,
+        onBridge: i % this.bridgeEvery === 0,
+        lamp: rand() < this.lanternRate,
         dir: rand() > 0.5 ? 1 : -1,
       });
     }
-  }
-  bridgeY(x) {
-    const s = 19;
-    return Q + 0.6 + 5.3 * Math.max(0, 1 - (x / s) ** 2) ** 0.86 - 0.5;
   }
   update(t, dt, count, eye) {
     const n = Math.max(0, Math.min(this.max, count | 0));
@@ -417,10 +431,9 @@ class Crowd {
       let x = path.a[0] + px * a.t, z = path.a[2] + pz * a.t, y = path.a[1] + (path.b[1] - path.a[1]) * a.t;
       let heading = Math.atan2(pz, px) * a.dir;
       if (a.onBridge) {
-        x = Math.sign(a.t - 0.5 || 1) * (6 + Math.abs(a.t - 0.5) * 26);
-        y = this.bridgeY(x);
-        z = a.off * 1.4;
-        heading = x > 0 ? Math.PI : 0;
+        const p = this.bridgeAt(a.t, a.off);
+        x = p.x; y = p.y; z = p.z;
+        heading = p.heading;
       } else {
         x += (-pz / len) * a.off;
         z += (px / len) * a.off;

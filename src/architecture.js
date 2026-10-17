@@ -1,11 +1,14 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { M, chineseRoof, ridgeOrnament, pillarGeo, railingGeo, bracketGeo, plaqueMesh, box, mesh, rand, rr, glow, PAL } from './kit.js';
-import { RIVER } from './data.js';
+import { M, chineseRoof, ridgeOrnament, pillarGeo, railingGeo, bracketGeo, plaqueMesh, box, mesh, rand, rr, glow, PAL, registerOccluder } from './kit.js';
+import { RIVER, STATIONS } from './data.js';
 import * as T from './textures.js';
 
 const Q = RIVER.quayY;          // quay deck height
 const HW = RIVER.halfWidth;     // water half width
+
+/** where the built structures actually are, filled in as they are built */
+export const LAYOUT = {};
 
 /* ---------------------------------------------------------------- banks & quays */
 function banks() {
@@ -54,7 +57,8 @@ function quayFurniture(anchors) {
       const pole = new THREE.CylinderGeometry(0.09, 0.14, 4.4, 6);
       pole.translate(x, Q + 2.2, z);
       const arm = box(0.9, 0.12, 0.12, x - s * 0.45, Q + 4.35, z);
-      g.add(mesh([pole, arm], M.ink));
+      const post = mesh([pole, arm], M.ink);
+      g.add(registerOccluder(post, 2.6, new THREE.Vector3(x, Q + 2.2, z)));
       anchors.lampPosts.push(new THREE.Vector3(x, Q + 3.9, z));
     }
   }
@@ -70,6 +74,7 @@ function gallery(anchors) {
   const x0 = -HW - 5.5;          // waterside colonnade
   const x1 = -HW - 12.5;         // inner colonnade
   const zA = -74, zB = 74;
+  LAYOUT.gallery = { x0, x1, zA, zB, deckY: Q + 0.45, eaveY: Q + 4.95, bay: (zB - zA) / Math.round((zB - zA) / 3.4) };
   const span = zB - zA, bays = Math.round(span / 3.4);
 
   const deck = mesh(box(Math.abs(x1 - x0) + 3.2, 0.55, span + 3.4, (x0 + x1) / 2, Q - 0.1, 0), M.stone);
@@ -279,6 +284,7 @@ function temple(anchors) {
 
   // hall body
   const wallH = 6.0, wy = Q + 2.6;
+  LAYOUT.temple = { x0: cx - 5.7, x1: cx + 9.7, halfZ: 9.6, floorY: wy, ceilY: wy + wallH, axisZ: 0, doorX: cx - 6.1 };
   const shell = mesh([
     box(0.5, wallH, 20, cx + 10, wy + wallH / 2, 0),
     box(16, wallH, 0.5, cx + 2, wy + wallH / 2, -9.9),
@@ -423,6 +429,7 @@ function paifang(anchors) {
 function examinationHall(anchors) {
   const g = new THREE.Group();
   const cx = -52, cz = 46;
+  LAYOUT.gongyuan = { cx, cz, hallX: cx - 12, cellsX0: cx - 22, cellsZ: cz };
   const gate = mesh([
     box(0.8, 6.2, 0.8, cx, Q + 3.1, cz - 5.4),
     box(0.8, 6.2, 0.8, cx, Q + 3.1, cz + 5.4),
@@ -486,6 +493,7 @@ function examinationHall(anchors) {
 function ferry(anchors) {
   const g = new THREE.Group();
   const cz = -84, x = -HW - 2.2;
+  LAYOUT.ferry = { x: x - 4, z: cz };
   const pav = new THREE.Group();
   const posts = [];
   for (const [dx, dz] of [[-1.7, -1.7], [1.7, -1.7], [-1.7, 1.7], [1.7, 1.7]]) {
@@ -565,15 +573,14 @@ export function buildQuarter(scene) {
 
   // river-edge banner poles with silk streamers
   const silkParts = [];
-  for (let z = -71.5; z <= 78; z += 13) {
-    for (const s of [-1, 1]) {
-      if (rand() > 0.55) continue;
-      const x = s * (HW + 2.6);
-      silkParts.push(box(0.12, 3.6, 0.12, x, Q + 1.8, z));
-      const flag = new THREE.PlaneGeometry(1.1, 1.9);
-      flag.translate(x + s * 0.6, Q + 3.1, z);
-      silkParts.push(flag);
-    }
+  const near = (z) => STATIONS.some((st) => Math.abs(st.pos[2] - z) < 9);
+  for (let z = -66; z <= 78; z += 13) {
+    if (rand() > 0.72 || near(z)) continue;
+    const x = HW + 3.4;
+    silkParts.push(box(0.12, 3.6, 0.12, x, Q + 1.8, z));
+    const flag = new THREE.PlaneGeometry(1.1, 1.9);
+    flag.translate(x - 0.6, Q + 3.1, z);
+    silkParts.push(flag);
   }
   const flags = new THREE.Mesh(mergeGeometries(silkParts), M.silk);
   group.add(flags);

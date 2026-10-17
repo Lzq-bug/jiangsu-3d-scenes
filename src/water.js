@@ -82,7 +82,15 @@ export class Reflections {
       clone.position.copy(src.position);
       clone.rotation.copy(src.rotation);
       clone.scale.copy(src.scale);
-      clone.visible = src.visible;
+      // clone(true) walks the tree in the same order, so visibility can be mirrored
+      if (src.children.length) {
+        const a = []; const b = [];
+        src.traverse((o) => a.push(o));
+        clone.traverse((o) => b.push(o));
+        for (let i = 0; i < Math.min(a.length, b.length); i++) b[i].visible = a[i].visible;
+      } else {
+        clone.visible = src.visible;
+      }
     }
   }
   set enabled(v) { this.root.visible = v; }
@@ -190,13 +198,13 @@ export class LightColumns {
   }
 }
 
-export function buildWater(scene, columns) {
-  const geo = new THREE.PlaneGeometry(RIVER.halfWidth * 2 + 3, RIVER.length, 40, 160);
+export function buildWater(scene, columns, river = RIVER, moonDir = MOON_DIR) {
+  const geo = new THREE.PlaneGeometry(river.halfWidth * 2 + 3, river.length, 40, 160);
   geo.rotateX(-Math.PI / 2);
   const uni = {
     uTime: { value: 0 },
     uRipple: { value: 1 },
-    uMoon: { value: MOON_DIR.clone() },
+    uMoon: { value: moonDir.clone() },
     uDeep: { value: new THREE.Color('#01040a') },
     uShallow: { value: new THREE.Color('#050f1c') },
     uNoise: { value: T.noise() },
@@ -265,7 +273,7 @@ export function buildWater(scene, columns) {
         col *= 0.95 + nsh*0.1;
 
         // oily darkening against the quay walls
-        float edge = smoothstep(${(RIVER.halfWidth + 1).toFixed(1)}, ${(RIVER.halfWidth - 3.5).toFixed(1)}, abs(p.x));
+        float edge = smoothstep(${(river.halfWidth + 1).toFixed(1)}, ${(river.halfWidth - 3.5).toFixed(1)}, abs(p.x));
         col *= 1.0 - edge*0.3;
 
         float a = clamp(0.80 + fres*0.16, 0.0, 0.96);
